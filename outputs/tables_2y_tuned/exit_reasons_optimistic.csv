@@ -1,0 +1,5 @@
+exit_reason,trade_count,net_pnl_usd
+time_stop,3,654.1075917304292
+profit_convergence,2,357.9297395201637
+hard_stop,1,-1470.56488346766
+funding_decay,1,3979.3491754686506

@@ -1,0 +1,21 @@
+[project]
+name = "funding_harvest"
+version = "0.0.1"
+description = "ETH funding-rate harvest / cash-and-carry research toolkit (Binance, ETHUSDT)."
+requires-python = ">=3.10"
+dependencies = [
+  "pandas",
+  "numpy",
+  "requests",
+  "pyarrow",
+  "matplotlib",
+  "pydantic",
+  "pyyaml",
+  "python-dotenv",
+  "tqdm",
+  "scipy",
+]
+
+[tool.ruff]
+line-length = 100
+

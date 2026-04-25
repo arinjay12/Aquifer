@@ -1,0 +1,14 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Data (too large for git; regenerate via download/build scripts)
+data/raw**/
+data/processed/*.parquet
+
+# Local run artifacts
+outputs/live_logs/live_signal_log.csv

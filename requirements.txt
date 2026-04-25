@@ -1,0 +1,15 @@
+pandas
+numpy
+requests
+pyarrow
+matplotlib
+pydantic
+pyyaml
+python-dotenv
+tqdm
+scipy
+
+# Optional later:
+# pytest
+# jupyter
+

@@ -1,0 +1,9 @@
+{
+  "csv": "outputs\\live_logs\\live_signal_log_48h_trade_example.csv",
+  "rows": 2880,
+  "entries": 1,
+  "exits": 1,
+  "signals": 1,
+  "start": "2024-07-03T00:00:00+00:00",
+  "end": "2024-07-04T23:59:00+00:00"
+}
