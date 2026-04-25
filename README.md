@@ -2,23 +2,22 @@
 
 ETH funding-rate harvest / single-venue cash-and-carry (Binance, ETHUSDT).
 
-This project designs, backtests, and generates live signals (no execution) for a **market-neutral** trade:
-
-- **Long ETHUSDT spot**
-- **Short ETHUSDT perpetual**
-- Enter only when positive funding + positive basis make the expected edge **after costs** large enough
+This project designs, backtests, and generates live signals (no execution) for a market-neutral trade:
+- Long ETHUSDT spot
+- Short ETHUSDT perpetual
+- Enter only when positive funding + positive basis make expected edge after costs large enough
 
 Disclaimer: Research software, not investment advice. Real execution has additional risks (latency, liquidations, outages, exchange risk).
 
 ---
 
-## Strategy design 
+## Strategy design
 
 ### What inefficiency are we exploiting?
-Perpetual futures funding rates and the “basis” (perp price minus spot price) can be persistently positive because many traders prefer **leveraged long exposure via perps**. That pushes perp prices above spot and makes funding positive. This isn’t fully arbitraged away because it requires capital + operational reliability and has tail risks (basis widening, funding flipping, exchange risk).
+Perpetual futures funding rates and the "basis" (perp price minus spot price) can be persistently positive because many traders prefer leveraged long exposure via perps. That pushes perp prices above spot and makes funding positive. This is not fully arbitraged away because it requires capital + operational reliability and has tail risks (basis widening, funding flipping, exchange risk).
 
 ### What are the signals?
-We trade a “cash-and-carry” pair:
+We trade a "cash-and-carry" pair:
 - Long spot ETHUSDT
 - Short perp ETHUSDT
 
@@ -31,7 +30,7 @@ Entry (all must be true):
 
 Exit (first match wins):
 1) hard stop: basis widened vs entry by `hard_stop_basis_widen_bps`
-2) profit/convergence: basis <= `exit_basis_bps` and ≥1 funding payment collected
+2) profit/convergence: basis <= `exit_basis_bps` and >= 1 funding payment collected
 3) funding decay: `expected_edge_bps <= exit_edge_bps`
 4) time stop: holding time >= `max_holding_hours`
 
@@ -54,7 +53,7 @@ expected_edge_bps = funding_rate_next_bps + basis_bps - round_trip_cost_bps
 Configured in `config/params.yaml` under `risk:`:
 - position sizing via `position_fraction` (fraction of equity used per trade)
 - drawdown pause: if drawdown exceeds `max_drawdown_pause_pct`, pause new entries for `pause_minutes`
-- a simple `confidence_score` in [0,1] for live logging (how far edge is above threshold)
+- a simple `confidence_score` in [0, 1] for logging (how far edge is above threshold)
 
 ---
 
@@ -65,7 +64,7 @@ Configured in `config/params.yaml` under `risk:`:
 - Binance futures klines (ETHUSDT, 1m)
 - Binance futures funding history
 
-Raw data saved under `data/raw_*` as Parquet; merged into a canonical minute dataset under `data/processed/`.
+Raw data is saved as Parquet under `data/raw_*` and merged into a canonical minute dataset under `data/processed/`.
 
 ### Costs (required)
 Backtests include fees + slippage for both legs. Results without these are disqualified; we include them.
@@ -77,7 +76,7 @@ Backtests include fees + slippage for both legs. Results without these are disqu
 - average holding period
 - turnover
 
-Trade ledger decomposes P&L into funding, basis/spread, and costs.
+Trade ledgers decompose P&L into funding, basis/spread, and costs.
 
 ---
 
@@ -89,8 +88,8 @@ Real-time runner:
 - logs: timestamp, instrument, direction, edge, confidence score, state, entry/exit flags
 
 48-hour log without waiting 48 hours:
-- `python -m src.live.historical_sim ...` replays historical minutes into the same live-log CSV schema instantly
-- this produces a shareable 48h log within minutes
+- `python -m src.live.historical_sim ...` replays historical minutes into the same live-log CSV schema quickly
+- this produces a shareable 48h log without requiring a 48h wall-clock run
 
 ---
 
@@ -98,14 +97,14 @@ Real-time runner:
 
 ### Minimum 2 years backtest
 We built a 2-year dataset:
-- 2024-04-25 → 2026-04-25 (UTC)
+- 2024-04-25 -> 2026-04-25 (UTC)
 - `data/processed/master_2y_1m.parquet`
 
 Default params results:
 - `outputs/tables_2y_default/summary_metrics.csv`
 - `outputs/figures_2y_default/`
 
-Tuned “funding-harvest demo” run (to ensure holding across funding timestamps):
+Tuned "funding-harvest demo" run (to ensure holding across funding timestamps):
 - `entry_edge_bps=5`, `exit_edge_bps=-50`, `max_holding_hours=72`
 - `outputs/tables_2y_tuned/summary_metrics.csv`
 - `outputs/ledgers_2y_tuned/trades_optimistic.csv`
@@ -115,37 +114,26 @@ Tuned “funding-harvest demo” run (to ensure holding across funding timestamp
 - `outputs/live_logs/live_signal_log_48h_trade_example.csv`
 - `outputs/live_logs/live_signal_log_48h_trade_example.summary.json`
 
-Note: many 48-hour windows will legitimately produce 0 trades (no edge after costs). That’s expected for a selective stat-arb strategy.
+### Headline numbers
+All runs start with $100,000 notional capital. We report both baseline and optimistic cost assumptions.
 
-### Headline numbers (to make this readable without running code)
+6-month pilot (2024-01-01 -> 2024-08-01), tuned demo settings:
+- Optimistic costs: +1.41% total return (+$1,410 net), 3 trades, Sharpe ~1.46, max drawdown ~-0.42%
+- See `outputs/tables_tuned/summary_metrics.csv`
 
-All runs start with **$100,000** notional capital. We report both “baseline” and “optimistic” cost assumptions.
+2-year evaluation (2024-04-25 -> 2026-04-25), tuned demo settings:
+- Optimistic costs: +3.52% total return (+$3,521 net), 7 trades, Sharpe ~0.64, max drawdown ~-1.65%
+- See `outputs/tables_2y_tuned/summary_metrics.csv` and `outputs/ledgers_2y_tuned/trades_optimistic.csv`
 
-**6-month pilot (2024-01-01 → 2024-08-01), tuned demo settings (`entry_edge_bps=5`, `exit_edge_bps=-50`, `max_holding_hours=72`)**
-- Optimistic costs: **+1.41% total return** (**+$1,410** net), **3 trades**, Sharpe ≈ **1.46**, max drawdown ≈ **-0.42%**
-- Funding harvesting is visible in this tuned run (non-zero funding P&L); see `outputs/tables_tuned/summary_metrics.csv`
+### Interpretation
+This is regime-dependent. Many 48-hour windows legitimately produce 0 trades when the basis/funding edge is not present after costs. That is expected for a selective stat-arb strategy.
 
-**2-year evaluation (2024-04-25 → 2026-04-25), default settings (as in `config/params.yaml`)**
-- This is intentionally selective and can be “inactive” for long periods; see `outputs/tables_2y_default/summary_metrics.csv`
-
-**2-year evaluation (2024-04-25 → 2026-04-25), tuned demo settings (`entry_edge_bps=5`, `exit_edge_bps=-50`, `max_holding_hours=72`)**
-- Optimistic costs: **+3.52% total return** (**+$3,521** net), **7 trades**, Sharpe ≈ **0.64**, max drawdown ≈ **-1.65%**
-- P&L decomposition in this tuned run is meaningfully split across basis + funding − costs; see:
-  - `outputs/tables_2y_tuned/summary_metrics.csv`
-  - `outputs/tables_2y_tuned/pnl_decomposition_optimistic.csv`
-  - `outputs/ledgers_2y_tuned/trades_optimistic.csv` (auditable trades)
-
-### Was it successful?
-As a **submission/system**: yes — it includes a strategy with explicit edge logic, a cost-aware backtester on real historical data (including a 2-year run), a live signal generator that logs edge + confidence, and a risk framework (position sizing + drawdown pause).
-
-As an **always-on money machine**: no guarantee — the strategy is regime-dependent. Many windows legitimately yield **0 trades** when the basis/funding edge is not present after costs. This is expected and is itself an important result.
-
-### Practical improvements (next steps)
+### Improvements (next steps)
 - Multi-venue / cross-exchange cash-and-carry (reduce regime dependence)
 - More realistic execution modeling (spread, partial fills, inventory constraints)
-- Better “next funding” estimation in live mode (Binance snapshot doesn’t provide it directly; v1 proxies it)
+- Better "next funding" estimation in live mode (v1 uses a simple proxy)
 - Capital efficiency constraints (margin, liquidation buffers) and stress tests
-- More robust regime detection / “edge vanished” logic (rolling edge distributions, funding flip detection)
+- More robust regime detection / "edge vanished" logic
 
 ---
 
@@ -187,9 +175,9 @@ python -m src.live.summarize_log --csv outputs/live_logs/live_signal_log_48h_tra
 ---
 
 ## Repo layout
-
 - `config/` typed config + YAML params
 - `data/` raw/processed data artifacts (parquet, CSV)
 - `src/` python modules (data, signals, backtest, analysis, live)
 - `outputs/` figures, tables, ledgers, live logs
 - `tests/` unit tests
+
