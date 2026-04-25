@@ -12,7 +12,7 @@ Disclaimer: Research software, not investment advice. Real execution has additio
 
 ---
 
-## Strategy design (plain English)
+## Strategy design 
 
 ### What inefficiency are we exploiting?
 Perpetual futures funding rates and the “basis” (perp price minus spot price) can be persistently positive because many traders prefer **leveraged long exposure via perps**. That pushes perp prices above spot and makes funding positive. This isn’t fully arbitraged away because it requires capital + operational reliability and has tail risks (basis widening, funding flipping, exchange risk).
