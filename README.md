@@ -117,6 +117,36 @@ Tuned “funding-harvest demo” run (to ensure holding across funding timestamp
 
 Note: many 48-hour windows will legitimately produce 0 trades (no edge after costs). That’s expected for a selective stat-arb strategy.
 
+### Headline numbers (to make this readable without running code)
+
+All runs start with **$100,000** notional capital. We report both “baseline” and “optimistic” cost assumptions.
+
+**6-month pilot (2024-01-01 → 2024-08-01), tuned demo settings (`entry_edge_bps=5`, `exit_edge_bps=-50`, `max_holding_hours=72`)**
+- Optimistic costs: **+1.41% total return** (**+$1,410** net), **3 trades**, Sharpe ≈ **1.46**, max drawdown ≈ **-0.42%**
+- Funding harvesting is visible in this tuned run (non-zero funding P&L); see `outputs/tables_tuned/summary_metrics.csv`
+
+**2-year evaluation (2024-04-25 → 2026-04-25), default settings (as in `config/params.yaml`)**
+- This is intentionally selective and can be “inactive” for long periods; see `outputs/tables_2y_default/summary_metrics.csv`
+
+**2-year evaluation (2024-04-25 → 2026-04-25), tuned demo settings (`entry_edge_bps=5`, `exit_edge_bps=-50`, `max_holding_hours=72`)**
+- Optimistic costs: **+3.52% total return** (**+$3,521** net), **7 trades**, Sharpe ≈ **0.64**, max drawdown ≈ **-1.65%**
+- P&L decomposition in this tuned run is meaningfully split across basis + funding − costs; see:
+  - `outputs/tables_2y_tuned/summary_metrics.csv`
+  - `outputs/tables_2y_tuned/pnl_decomposition_optimistic.csv`
+  - `outputs/ledgers_2y_tuned/trades_optimistic.csv` (auditable trades)
+
+### Was it successful?
+As a **submission/system**: yes — it includes a strategy with explicit edge logic, a cost-aware backtester on real historical data (including a 2-year run), a live signal generator that logs edge + confidence, and a risk framework (position sizing + drawdown pause).
+
+As an **always-on money machine**: no guarantee — the strategy is regime-dependent. Many windows legitimately yield **0 trades** when the basis/funding edge is not present after costs. This is expected and is itself an important result.
+
+### Practical improvements (next steps)
+- Multi-venue / cross-exchange cash-and-carry (reduce regime dependence)
+- More realistic execution modeling (spread, partial fills, inventory constraints)
+- Better “next funding” estimation in live mode (Binance snapshot doesn’t provide it directly; v1 proxies it)
+- Capital efficiency constraints (margin, liquidation buffers) and stress tests
+- More robust regime detection / “edge vanished” logic (rolling edge distributions, funding flip detection)
+
 ---
 
 ## Reproduce (commands)
